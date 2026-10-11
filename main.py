@@ -1,20 +1,22 @@
-import json
 import sys
+import asyncio
 
-from github_client import fetch_repos, GithubError, ReposValidationError
+from github_client import make_async_client, fetch_repos_async
+
+from exceptions import GithubError, ReposValidationError
+
 from dotenv import load_dotenv
 import argparse
 
 from repo_schema import Repo
 from save_repos import save_repos
 
-
 def print_repos(repos: list[Repo]):
     for repo in repos:
         print(f'Name: {repo.full_name}, stars count: {repo.stargazers_count}; {repo.language}, Owner: {repo.owner.username}; {repo.owner.html_url}')
 
 
-def main():
+async def main():
     load_dotenv()
 
     parser = argparse.ArgumentParser()
@@ -25,12 +27,12 @@ def main():
     )
 
     args = parser.parse_args()
-    print(json.dumps(Repo.model_json_schema(), indent=4))
-    try:
 
-        repos = fetch_repos(args.username)
-        save_repos(repos)
-        print_repos(repos)
+    try:
+        async with make_async_client() as client:
+            repos = await fetch_repos_async(client, args.username)
+            save_repos(repos)
+            print_repos(repos)
     except ReposValidationError as err:
         print(f'Validation errors {err}', file=sys.stderr)
         for error in err.errors:
@@ -41,7 +43,5 @@ def main():
         print(f'Error {err}', file=sys.stderr)
         sys.exit(1)
 
-
-
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
