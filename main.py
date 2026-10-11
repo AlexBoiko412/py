@@ -1,28 +1,17 @@
-import os
-from typing import Any
+import json
+import sys
 
-import httpx
+from github_client import fetch_repos, GithubError, ReposValidationError
 from dotenv import load_dotenv
 import argparse
 
+from repo_schema import Repo
+from save_repos import save_repos
 
-def get_repos_star_counts_for_username(username: str) -> list[dict[str, Any]]:
-    try:
-        response = httpx.get(
-            f'https://api.github.com/users/{username}/repos',
-            timeout=10,
-            headers={'Authorization': f'Bearer {os.environ["GITHUB_TOKEN"]}'},
-            params={"per_page": 100, "page": 1}
-        )
-        response.raise_for_status()
-        return response.json()
-    except httpx.HTTPStatusError as err:
-        print(err)
-        return []
 
-def print_repos(repos: list[dict[str, int]]):
+def print_repos(repos: list[Repo]):
     for repo in repos:
-        print(f'Name: {repo["full_name"]}, stars count: {repo["stargazers_count"]}')
+        print(f'Name: {repo.full_name}, stars count: {repo.stargazers_count}; {repo.language}, Owner: {repo.owner.username}; {repo.owner.html_url}')
 
 
 def main():
@@ -36,9 +25,23 @@ def main():
     )
 
     args = parser.parse_args()
+    print(json.dumps(Repo.model_json_schema(), indent=4))
+    try:
 
-    repos = get_repos_star_counts_for_username(args.username)
-    print_repos(repos)
+        repos = fetch_repos(args.username)
+        save_repos(repos)
+        print_repos(repos)
+    except ReposValidationError as err:
+        print(f'Validation errors {err}', file=sys.stderr)
+        for error in err.errors:
+            location = '.'.join(str(item) for item in error['loc'])
+            print(f' {location}: {error['msg']}', file=sys.stderr)
+        sys.exit(1)
+    except GithubError as err:
+        print(f'Error {err}', file=sys.stderr)
+        sys.exit(1)
+
+
 
 if __name__ == "__main__":
     main()
