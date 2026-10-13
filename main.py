@@ -1,5 +1,6 @@
 import sys
 import asyncio
+from pathlib import Path
 
 from github_client import make_async_client, fetch_repos_async
 
@@ -31,7 +32,7 @@ async def main():
     try:
         async with make_async_client() as client:
             repos = await fetch_repos_async(client, args.username)
-            save_repos(repos)
+            save_repos(repos, Path('repos.json'))
             print_repos(repos)
     except ReposValidationError as err:
         print(f'Validation errors {err}', file=sys.stderr)
