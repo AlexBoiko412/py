@@ -1,10 +1,7 @@
-from pathlib import Path
+import pathlib
 
-from pydantic import TypeAdapter
-
-from repo_schema import Repo
+from repo_schema import Repo, REPOS_ADAPTER
 
 
-def save_repos(repos: list[Repo]):
-    _repos_adapter = TypeAdapter(list[Repo])
-    Path('repos.json').write_bytes(_repos_adapter.dump_json(repos, indent=2, by_alias=True))
+def save_repos(repos: list[Repo], path: pathlib.Path):
+    path.write_bytes(REPOS_ADAPTER.dump_json(repos, indent=2, by_alias=True))

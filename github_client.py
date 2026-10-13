@@ -4,13 +4,10 @@ from typing import Any
 import httpx
 import os
 
-from pydantic import ValidationError, TypeAdapter
-from exceptions import *
+from pydantic import ValidationError
+from exceptions import UserNotFoundError, AuthError, RateLimitError, ReposValidationError, GithubError, GitHubConnectionError
 
-from repo_schema import Repo
-
-
-_REPOS_ADAPTER = TypeAdapter(list[Repo])
+from repo_schema import Repo, REPOS_ADAPTER
 
 def _build_headers() -> dict[str, str]:
     headers = {'Accept': 'application/vnd.github+json'}
@@ -39,7 +36,7 @@ def _parse_repos(response: httpx.Response, username: str) -> list[Repo]:
         raise GithubError(f'Unexpected error from GitHub: {status}')
 
     try:
-        repo_list = _REPOS_ADAPTER.validate_python(response.json())
+        repo_list = REPOS_ADAPTER.validate_python(response.json())
     except ValidationError as err:
         raise ReposValidationError(err.errors(include_url=False)) from err
 

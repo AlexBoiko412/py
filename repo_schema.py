@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, TypeAdapter
 
 
 class Owner(BaseModel):
@@ -14,3 +14,5 @@ class Repo(BaseModel):
     html_url: Annotated[str, Field(min_length=1)]
     language: str | None = None
     owner: Owner
+
+REPOS_ADAPTER = TypeAdapter(list[Repo])
