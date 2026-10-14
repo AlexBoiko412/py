@@ -4,10 +4,12 @@ import httpx
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 
-from github_client import make_async_client, fetch_repos_async
+from github_client import fetch_repos_async
 from exceptions import UserNotFoundError, AuthError, RateLimitError, ReposValidationError, GitHubConnectionError
 from save_repos import save_repos
 from repo_schema import Repo, Owner, REPOS_ADAPTER
+from tests.conftest import create_mock_client
+
 
 @pytest.fixture
 def successful_response():
@@ -49,12 +51,6 @@ def invalid_response():
         }
     ]
 
-def create_mock_client(handler, **kwargs) -> httpx.AsyncClient:
-    return make_async_client(
-        transport=httpx.MockTransport(handler),
-        **kwargs
-    )
-
 async def test_fetch_repos_success(successful_response: list[dict]):
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(status_code=200, json=successful_response)
@@ -73,7 +69,7 @@ async def test_fetch_repos_success(successful_response: list[dict]):
         (401, {}, AuthError, "Not authorized"),
         (403, {}, AuthError, "Access forbidden"),
         (403, {"x-ratelimit-remaining": "0", "x-ratelimit-reset": "1791900240"}, RateLimitError, "Rate limit"),
-        (429, {"x-ratelimit-remaining": "0"}, RateLimitError, "later"),  # no reset header
+        (429, {"x-ratelimit-remaining": "0"}, RateLimitError, "later"),
     ],
 )
 async def test_fetch_repos_failed(
