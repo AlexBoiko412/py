@@ -30,7 +30,15 @@ def _parse_repos(response: httpx.Response, username: str) -> list[Repo]:
         if response.headers.get('x-ratelimit-remaining') == '0':
             reset_time = response.headers.get('x-ratelimit-reset')
             when = datetime.fromtimestamp(int(reset_time), timezone.utc) if reset_time else "later"
-            raise RateLimitError(f'Rate limit exceeded, try again at {when}')
+
+            _FORWARDED = ("x-ratelimit-limit", "x-ratelimit-remaining", "x-ratelimit-reset", "retry-after")
+
+            headers = {k: v for k, v in response.headers.items() if k in _FORWARDED}
+
+            raise RateLimitError(
+                f'Rate limit exceeded, try again at {when}',
+                dict(headers)
+            )
         raise AuthError('Access forbidden')
     if status >= 400:
         raise GithubError(f'Unexpected error from GitHub: {status}')

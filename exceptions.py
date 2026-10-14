@@ -2,7 +2,8 @@ from pydantic_core import ErrorDetails
 
 
 class GithubError(Exception):
-    pass
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
 
 class UserNotFoundError(GithubError):
     pass
@@ -11,7 +12,9 @@ class AuthError(GithubError):
     pass
 
 class RateLimitError(GithubError):
-    pass
+    def __init__(self, message: str, headers: dict[str, str]) -> None:
+        super().__init__(message)
+        self.headers = headers
 
 class GitHubConnectionError(GithubError):
     pass
